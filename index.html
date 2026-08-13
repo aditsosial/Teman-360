@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Teman 360</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- ===== AUTH SCREEN ===== -->
+  <section id="view-auth" class="screen auth-screen">
+    <div class="auth-brand">
+      <div class="auth-mark">360</div>
+      <h1>Teman 360</h1>
+      <p>Ruang bersama untuk ASN yang harmonis, aktif &amp; peduli.</p>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth="login">Masuk</button>
+        <button class="auth-tab" data-auth="register">Daftar</button>
+      </div>
+
+      <form id="form-login" class="auth-form">
+        <label>Email
+          <input type="email" name="email" required placeholder="nama@instansi.go.id">
+        </label>
+        <label>Kata Sandi
+          <input type="password" name="password" required placeholder="••••••••">
+        </label>
+        <p class="form-error" id="login-error"></p>
+        <button type="submit" class="btn btn-primary">Masuk</button>
+      </form>
+
+      <form id="form-register" class="auth-form hidden">
+        <label>Nama Lengkap
+          <input type="text" name="nama" required placeholder="Nama kamu">
+        </label>
+        <label>Unit Kerja
+          <input type="text" name="unitKerja" placeholder="mis. Sekretariat Ditjen X">
+        </label>
+        <label>Email
+          <input type="email" name="email" required placeholder="nama@instansi.go.id">
+        </label>
+        <label>Kata Sandi
+          <input type="password" name="password" required minlength="6" placeholder="Minimal 6 karakter">
+        </label>
+        <p class="form-error" id="register-error"></p>
+        <button type="submit" class="btn btn-primary">Buat Akun</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== APP SHELL ===== -->
+  <section id="view-app" class="screen app-shell hidden">
+
+    <header class="app-bar" id="app-bar">
+      <div>
+        <p class="app-bar-eyebrow" id="app-bar-eyebrow">Selamat datang</p>
+        <h2 id="app-bar-title">Home</h2>
+      </div>
+      <button class="avatar-btn" id="btn-logout" title="Keluar">
+        <span id="avatar-initial">A</span>
+      </button>
+    </header>
+
+    <main class="app-content">
+
+      <!-- ---------- HOME ---------- -->
+      <div class="tab-panel active" id="panel-home">
+        <div class="value-banner">
+          <span class="value-tag">Nilai BerAKHLAK</span>
+          <h3>Harmonis</h3>
+          <p>Sebagai ASN, sikap harmonis menjaga lingkungan kerja tetap suportif, saling peduli, dan menghargai perbedaan — nilai inilah yang menghidupkan Teman 360.</p>
+        </div>
+
+        <div class="section-head">
+          <h4>Kegiatan Terdaftar</h4>
+        </div>
+
+        <div class="mini-tabs">
+          <button class="mini-tab active" data-home="upcoming">Akan Berlangsung</button>
+          <button class="mini-tab" data-home="done">Sudah Selesai</button>
+        </div>
+
+        <div id="home-upcoming" class="stack"></div>
+        <div id="home-done" class="stack hidden"></div>
+      </div>
+
+      <!-- ---------- SERU ---------- -->
+      <div class="tab-panel" id="panel-seru">
+        <div class="section-head">
+          <h4>Daftar Kegiatan</h4>
+          <button class="btn btn-pill btn-seru" id="btn-add-activity">+ Tambah</button>
+        </div>
+        <div id="seru-list" class="stack"></div>
+      </div>
+
+      <!-- ---------- PEDULI ---------- -->
+      <div class="tab-panel" id="panel-peduli">
+        <div class="section-head">
+          <h4>Galang &amp; Bantu Donasi</h4>
+          <button class="btn btn-pill btn-peduli" id="btn-add-donation">+ Ajukan</button>
+        </div>
+        <div id="peduli-list" class="stack"></div>
+      </div>
+
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-tab="home">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 11L12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1v-8z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="nav-btn" data-tab="seru">
+        <svg viewBox="0 0 24 24" width="22" height="22"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Seru</span>
+      </button>
+      <button class="nav-btn" data-tab="peduli">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 20s-7-4.3-9.3-8.7C1.2 8 2.6 5 5.7 5c1.8 0 3.2 1 4.3 2.5C11.1 6 12.5 5 14.3 5c3.1 0 4.5 3 3 6.3C15 15.7 12 20 12 20z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Peduli</span>
+      </button>
+    </nav>
+  </section>
+
+</div>
+
+<!-- ===== MODALS ===== -->
+<div class="modal-backdrop hidden" id="modal-backdrop">
+
+  <div class="modal" id="modal-activity-detail">
+    <button class="modal-close" data-close>&times;</button>
+    <div class="modal-body" id="activity-detail-body"></div>
+  </div>
+
+  <div class="modal" id="modal-donation-detail">
+    <button class="modal-close" data-close>&times;</button>
+    <div class="modal-body" id="donation-detail-body"></div>
+  </div>
+
+  <div class="modal" id="modal-add-activity">
+    <button class="modal-close" data-close>&times;</button>
+    <h3>Tambah Kegiatan</h3>
+    <form id="form-add-activity" class="stack-form">
+      <label>Judul Kegiatan
+        <input type="text" name="judul" required placeholder="mis. Badminton Sore">
+      </label>
+      <label>Kategori
+        <select name="kategori" required>
+          <option value="Badminton">Badminton</option>
+          <option value="Tenis">Tenis</option>
+          <option value="Jogging">Jogging</option>
+          <option value="Karaoke">Karaoke</option>
+          <option value="Kajian">Kajian</option>
+          <option value="Lainnya">Lainnya</option>
+        </select>
+      </label>
+      <label>Deskripsi
+        <textarea name="deskripsi" rows="3" required placeholder="Ceritakan detail kegiatannya"></textarea>
+      </label>
+      <label>Tanggal
+        <input type="date" name="tanggal" required>
+      </label>
+      <label>Lokasi
+        <input type="text" name="lokasi" placeholder="mis. Lapangan Kantor">
+      </label>
+      <p class="form-error" id="add-activity-error"></p>
+      <button type="submit" class="btn btn-seru">Simpan Kegiatan</button>
+    </form>
+  </div>
+
+  <div class="modal" id="modal-add-donation">
+    <button class="modal-close" data-close>&times;</button>
+    <h3>Ajukan Donasi</h3>
+    <form id="form-add-donation" class="stack-form">
+      <label>Judul / Untuk Siapa
+        <input type="text" name="judul" required placeholder="mis. Bantuan untuk Pak Budi">
+      </label>
+      <label>Deskripsi
+        <textarea name="deskripsi" rows="3" required placeholder="Ceritakan latar belakang &amp; tujuan donasi"></textarea>
+      </label>
+      <label>Target Biaya (Rp)
+        <input type="number" name="targetBiaya" required min="1" placeholder="5000000">
+      </label>
+      <div class="form-row">
+        <label>Tanggal Mulai
+          <input type="date" name="tanggalMulai" required>
+        </label>
+        <label>Tanggal Selesai
+          <input type="date" name="tanggalSelesai" required>
+        </label>
+      </div>
+      <label>Nomor Rekening
+        <input type="text" name="noRekening" required placeholder="mis. BCA 1234567890">
+      </label>
+      <label>Atas Nama Rekening
+        <input type="text" name="atasNama" required placeholder="Nama pemilik rekening">
+      </label>
+      <p class="form-error" id="add-donation-error"></p>
+      <button type="submit" class="btn btn-peduli">Ajukan Donasi</button>
+    </form>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
