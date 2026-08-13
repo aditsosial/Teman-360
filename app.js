@@ -2,7 +2,7 @@
 const CONFIG = {
   // Ganti dengan URL Web App Apps Script kamu setelah deploy
   // (lihat google-apps-script/SHEET_STRUCTURE.md)
-  API_URL: 'https://script.google.com/macros/s/GANTI_DENGAN_DEPLOYMENT_ID/exec'
+  API_URL: 'https://script.google.com/macros/s/AKfycbys50cJt7-pofa37Qi-lCf5EOq87uRgFaKWkxfJQcH3SnsljODrWyxObGfGS9wuARAp/exec'
 };
 
 // ================= STATE =================
