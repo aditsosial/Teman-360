@@ -66,15 +66,11 @@ body{
 }
 .auth-brand{text-align:center;margin-bottom:26px;}
 .auth-mark{
-  width:58px;height:58px;margin:0 auto 16px;
-  border-radius:18px;
-  background:rgba(255,255,255,0.92);
-  color:var(--clr-primary-dark);
-  font-family:var(--font-mono);
-  font-weight:700;
-  display:flex;align-items:center;justify-content:center;
-  font-size:15px;
-  box-shadow:0 8px 20px rgba(0,0,0,0.15);
+  width:84px;height:84px;margin:0 auto 16px;
+  border-radius:22px;
+  display:block;
+  object-fit:cover;
+  box-shadow:0 10px 24px rgba(0,0,0,0.2);
 }
 .auth-brand h1{
   font-family:var(--font-display);
@@ -206,11 +202,14 @@ textarea{resize:vertical;font-family:var(--font-body);}
   border:none;
   background:linear-gradient(135deg,var(--clr-primary) 0%, var(--clr-primary-dark) 100%);
   color:#fff;
-  font-weight:700;
-  font-family:var(--font-mono);
+  display:flex;
+  align-items:center;
+  justify-content:center;
   cursor:pointer;
   box-shadow:0 6px 14px rgba(78,156,124,0.35);
+  transition:transform .15s ease;
 }
+.avatar-btn:active{transform:scale(0.92);}
 
 .app-content{
   flex:1;
