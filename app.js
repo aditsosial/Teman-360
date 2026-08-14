@@ -115,7 +115,6 @@ function enterApp() {
   document.getElementById('view-auth').classList.add('hidden');
   document.getElementById('view-app').classList.remove('hidden');
   document.getElementById('app-bar-eyebrow').textContent = `Halo, ${currentUser.nama.split(' ')[0]}`;
-  document.getElementById('avatar-initial').textContent = currentUser.nama.charAt(0).toUpperCase();
   switchTab('home');
   loadHome();
   loadActivities();
