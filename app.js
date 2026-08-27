@@ -53,6 +53,16 @@ function el(html) {
   div.innerHTML = html.trim();
   return div.firstChild;
 }
+function isOwner(item) {
+  return !!currentUser && String(item.dibuatOlehId) === String(currentUser.id);
+}
+function showLoadingState() {
+  ['home-upcoming', 'seru-list', 'peduli-list'].forEach(id => {
+    const container = document.getElementById(id);
+    container.innerHTML = '';
+    container.appendChild(el(`<div class="empty-state">Memuat data...</div>`));
+  });
+}
 
 // ================= AUTH =================
 const authTabs = document.querySelectorAll('.auth-tab');
@@ -111,14 +121,26 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 });
 
 // ================= APP SHELL / NAV =================
-function enterApp() {
+async function enterApp() {
   document.getElementById('view-auth').classList.add('hidden');
   document.getElementById('view-app').classList.remove('hidden');
   document.getElementById('app-bar-eyebrow').textContent = `Halo, ${currentUser.nama.split(' ')[0]}`;
   switchTab('home');
-  loadHome();
-  loadActivities();
-  loadDonations();
+  showLoadingState();
+
+  // Satu request gabungan (Home + Seru + Peduli) alih-alih 3 request terpisah,
+  // supaya lebih cepat karena tiap request ke Apps Script punya overhead sendiri.
+  try {
+    const data = await apiGet('getInitialData', { userId: currentUser.id });
+    activitiesCache = data.activities;
+    donationsCache = data.donations;
+    renderHomeList('home-upcoming', data.dashboard.akanBerlangsung, 'badge-upcoming', 'Akan Datang');
+    renderHomeList('home-done', data.dashboard.sudahSelesai, 'badge-done', 'Selesai');
+    renderActivities();
+    renderDonations();
+  } catch (err) {
+    showToast(err.message);
+  }
 }
 
 const titleByTab = { home: 'Home', seru: 'Seru', peduli: 'Peduli' };
@@ -143,6 +165,8 @@ document.querySelectorAll('.mini-tab').forEach(btn => {
 });
 
 // ================= HOME =================
+// Dipakai untuk refresh Home saja setelah aksi tertentu (join dsb),
+// tanpa perlu menarik ulang seluruh data lewat getInitialData.
 async function loadHome() {
   try {
     const data = await apiGet('getDashboard', { userId: currentUser.id });
@@ -177,6 +201,8 @@ function renderHomeList(containerId, items, badgeClass, badgeText) {
 // ================= SERU =================
 document.getElementById('btn-add-activity').addEventListener('click', () => openModal('modal-add-activity'));
 
+// Dipakai untuk refresh tab Seru saja setelah tambah/hapus/join,
+// tanpa perlu menarik ulang seluruh data lewat getInitialData.
 async function loadActivities() {
   try {
     activitiesCache = await apiGet('getActivities');
@@ -216,6 +242,7 @@ async function openActivityDetail(id) {
     const k = await apiGet('getActivityDetail', { id });
     const body = document.getElementById('activity-detail-body');
     const sudahJoin = k.peserta.some(p => p.nama === currentUser.nama);
+    const bolehHapus = isOwner(k);
     body.innerHTML = `
       <span class="badge badge-seru">${k.kategori}</span>
       <p class="detail-title">${k.judul}</p>
@@ -230,12 +257,28 @@ async function openActivityDetail(id) {
       <button class="btn btn-seru" id="btn-join" style="width:100%;" ${sudahJoin ? 'disabled' : ''}>
         ${sudahJoin ? 'Kamu sudah bergabung' : 'Join Kegiatan'}
       </button>
+      ${bolehHapus ? `<button class="btn btn-danger" id="btn-delete-activity" style="width:100%;margin-top:10px;">Hapus Kegiatan</button>` : ''}
     `;
     if (!sudahJoin) {
       document.getElementById('btn-join').addEventListener('click', async () => {
         try {
           await apiPost('joinActivity', { kegiatanId: id, userId: currentUser.id, userNama: currentUser.nama });
           showToast('Berhasil bergabung!');
+          closeModals();
+          loadActivities();
+          loadHome();
+        } catch (err) {
+          showToast(err.message);
+        }
+      });
+    }
+    if (bolehHapus) {
+      document.getElementById('btn-delete-activity').addEventListener('click', async () => {
+        const yakin = window.confirm('Yakin ingin menghapus kegiatan ini? Semua data peserta juga akan terhapus dan tidak bisa dikembalikan.');
+        if (!yakin) return;
+        try {
+          await apiPost('deleteActivity', { activityId: id, userId: currentUser.id });
+          showToast('Kegiatan berhasil dihapus.');
           closeModals();
           loadActivities();
           loadHome();
@@ -277,6 +320,8 @@ document.getElementById('form-add-activity').addEventListener('submit', async e 
 // ================= PEDULI =================
 document.getElementById('btn-add-donation').addEventListener('click', () => openModal('modal-add-donation'));
 
+// Dipakai untuk refresh tab Peduli saja setelah tambah/hapus/kontribusi,
+// tanpa perlu menarik ulang seluruh data lewat getInitialData.
 async function loadDonations() {
   try {
     donationsCache = await apiGet('getDonations');
@@ -321,6 +366,7 @@ async function openDonationDetail(id) {
     const d = await apiGet('getDonationDetail', { id });
     const pct = Math.min(100, Math.round((d.terkumpul / d.targetBiaya) * 100));
     const body = document.getElementById('donation-detail-body');
+    const bolehHapus = isOwner(d);
     body.innerHTML = `
       <p class="detail-title">${d.judul}</p>
       <p class="detail-meta">${formatTanggal(d.tanggalMulai)} – ${formatTanggal(d.tanggalSelesai)} · diajukan oleh ${d.dibuatOlehNama}</p>
@@ -338,6 +384,7 @@ async function openDonationDetail(id) {
         </div>
       </div>
       <button class="btn btn-peduli" id="btn-contribute" style="width:100%;">Saya Sudah Transfer</button>
+      ${bolehHapus ? `<button class="btn btn-danger" id="btn-delete-donation" style="width:100%;margin-top:10px;">Hapus Donasi</button>` : ''}
     `;
     document.getElementById('btn-contribute').addEventListener('click', async () => {
       try {
@@ -349,6 +396,20 @@ async function openDonationDetail(id) {
         showToast(err.message);
       }
     });
+    if (bolehHapus) {
+      document.getElementById('btn-delete-donation').addEventListener('click', async () => {
+        const yakin = window.confirm('Yakin ingin menghapus donasi ini? Semua data kontribusi juga akan terhapus dan tidak bisa dikembalikan.');
+        if (!yakin) return;
+        try {
+          await apiPost('deleteDonation', { donasiId: id, userId: currentUser.id });
+          showToast('Donasi berhasil dihapus.');
+          closeModals();
+          loadDonations();
+        } catch (err) {
+          showToast(err.message);
+        }
+      });
+    }
     openModal('modal-donation-detail');
   } catch (err) {
     showToast(err.message);
