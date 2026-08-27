@@ -9,6 +9,9 @@ const CONFIG = {
 let currentUser = JSON.parse(localStorage.getItem('teman360_user') || 'null');
 let activitiesCache = [];
 let donationsCache = [];
+let chatListPollInterval = null;   // polling daftar chat masuk (khusus akun psikolog)
+let chatThreadPollInterval = null; // polling isi 1 jendela chat yang sedang dibuka
+let activeChatConversationId = null; // percakapan yang sedang dibuka psikolog
 
 // ================= API HELPERS =================
 async function apiGet(action, params = {}) {
@@ -41,6 +44,10 @@ function formatTanggal(d) {
 }
 function formatRupiah(n) {
   return 'Rp' + Number(n || 0).toLocaleString('id-ID');
+}
+function formatJam(waktu) {
+  if (!waktu) return '';
+  return new Date(waktu).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 }
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -116,6 +123,9 @@ function setSession(user) {
 document.getElementById('btn-logout').addEventListener('click', () => {
   localStorage.removeItem('teman360_user');
   currentUser = null;
+  clearInterval(chatListPollInterval);
+  clearInterval(chatThreadPollInterval);
+  document.querySelector('.bottom-nav').classList.remove('hidden');
   document.getElementById('view-app').classList.add('hidden');
   document.getElementById('view-auth').classList.remove('hidden');
 });
@@ -125,6 +135,14 @@ async function enterApp() {
   document.getElementById('view-auth').classList.add('hidden');
   document.getElementById('view-app').classList.remove('hidden');
   document.getElementById('app-bar-eyebrow').textContent = `Halo, ${currentUser.nama.split(' ')[0]}`;
+
+  if (currentUser.isPsikolog) {
+    enterPsikologMode();
+    return;
+  }
+
+  document.querySelector('.bottom-nav').classList.remove('hidden');
+  document.getElementById('panel-psikolog').classList.remove('active');
   switchTab('home');
   showLoadingState();
 
@@ -143,6 +161,20 @@ async function enterApp() {
   }
 }
 
+// Tampilan khusus untuk akun "psikolog": langsung ke daftar chat masuk,
+// tanpa Home/Seru/Peduli dan tanpa tombol floating.
+function enterPsikologMode() {
+  document.querySelector('.bottom-nav').classList.add('hidden');
+  document.getElementById('btn-open-chat').classList.add('hidden');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-psikolog').classList.add('active');
+  document.getElementById('app-bar-title').textContent = 'Chat Masuk';
+
+  loadPsikologChats();
+  clearInterval(chatListPollInterval);
+  chatListPollInterval = setInterval(loadPsikologChats, 8000);
+}
+
 const titleByTab = { home: 'Home', seru: 'Seru', peduli: 'Peduli' };
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
@@ -152,6 +184,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + tab).classList.add('active');
   document.getElementById('app-bar-title').textContent = titleByTab[tab];
+  document.getElementById('btn-open-chat').classList.toggle('hidden', tab !== 'home');
 }
 
 // Home mini tabs
@@ -451,6 +484,133 @@ document.getElementById('form-add-donation').addEventListener('submit', async e 
   }
 });
 
+// ================= CHAT PSIKOLOG =================
+
+// myRole: 'user' kalau yang lihat adalah user biasa (pesan sendiri = kanan/hijau),
+// 'psikolog' kalau yang lihat adalah akun psikolog.
+function renderChatMessages(containerId, messages, myRole) {
+  const container = document.getElementById(containerId);
+  const wasAtBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 20;
+  container.innerHTML = '';
+  if (!messages.length) {
+    container.appendChild(el(`<div class="empty-state">Belum ada pesan. Mulai percakapan ini.</div>`));
+    return;
+  }
+  messages.forEach(m => {
+    const mine = m.pengirim === myRole;
+    container.appendChild(el(`
+      <div class="chat-bubble ${mine ? 'me' : 'other'}">
+        <p>${m.pesan}</p>
+        <span class="chat-meta">${formatJam(m.waktu)}</span>
+      </div>
+    `));
+  });
+  if (wasAtBottom || messages.length <= 1) {
+    container.scrollTop = container.scrollHeight;
+  }
+}
+
+// ---- Chat sisi user biasa (1 percakapan anonim dengan psikolog) ----
+document.getElementById('btn-open-chat').addEventListener('click', () => openUserChat());
+
+async function openUserChat() {
+  openModal('modal-user-chat');
+  await refreshUserChat();
+  clearInterval(chatThreadPollInterval);
+  chatThreadPollInterval = setInterval(refreshUserChat, 6000);
+}
+
+async function refreshUserChat() {
+  try {
+    const messages = await apiGet('getChatMessages', { conversationId: currentUser.id });
+    renderChatMessages('chat-window-user', messages, 'user');
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+document.getElementById('form-send-chat-user').addEventListener('submit', async e => {
+  e.preventDefault();
+  const inputEl = document.getElementById('input-chat-user');
+  const pesan = inputEl.value.trim();
+  if (!pesan) return;
+  inputEl.value = '';
+  try {
+    await apiPost('sendChatMessage', { userId: currentUser.id, pesan });
+    await refreshUserChat();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// ---- Chat sisi psikolog (daftar percakapan + balas) ----
+async function loadPsikologChats() {
+  try {
+    const list = await apiGet('getChatList', { requesterId: currentUser.id });
+    renderPsikologChatList(list);
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+function renderPsikologChatList(list) {
+  const container = document.getElementById('psikolog-chat-list');
+  container.innerHTML = '';
+  if (!list.length) {
+    container.appendChild(el(`<div class="empty-state">Belum ada yang chat dalam 24 jam terakhir.</div>`));
+    return;
+  }
+  list.forEach(c => {
+    const card = el(`
+      <div class="card">
+        <div class="card-top">
+          <div>
+            <p class="card-title">${c.namaTampil}</p>
+            <p class="card-meta">${c.pesanTerakhir}</p>
+          </div>
+          <span class="badge badge-upcoming">${formatJam(c.waktuTerakhir)}</span>
+        </div>
+      </div>
+    `);
+    card.addEventListener('click', () => openPsikologChat(c.conversationId, c.namaTampil));
+    container.appendChild(card);
+  });
+}
+
+async function openPsikologChat(conversationId, namaTampil) {
+  activeChatConversationId = conversationId;
+  document.getElementById('psikolog-chat-title').textContent = namaTampil;
+  openModal('modal-psikolog-chat');
+  await refreshPsikologChat();
+  clearInterval(chatThreadPollInterval);
+  chatThreadPollInterval = setInterval(refreshPsikologChat, 6000);
+}
+
+async function refreshPsikologChat() {
+  if (!activeChatConversationId) return;
+  try {
+    const messages = await apiGet('getChatMessages', { conversationId: activeChatConversationId });
+    renderChatMessages('chat-window-psikolog', messages, 'psikolog');
+  } catch (err) {
+    showToast(err.message);
+  }
+}
+
+document.getElementById('form-send-chat-psikolog').addEventListener('submit', async e => {
+  e.preventDefault();
+  const inputEl = document.getElementById('input-chat-psikolog');
+  const pesan = inputEl.value.trim();
+  if (!pesan || !activeChatConversationId) return;
+  inputEl.value = '';
+  try {
+    await apiPost('sendChatMessage', { userId: currentUser.id, conversationId: activeChatConversationId, pesan });
+    await refreshPsikologChat();
+    loadPsikologChats(); // perbarui preview pesan terakhir di daftar
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
 // ================= MODAL HELPERS =================
 function openModal(id) {
   document.getElementById('modal-backdrop').classList.remove('hidden');
@@ -460,6 +620,8 @@ function openModal(id) {
 function closeModals() {
   document.getElementById('modal-backdrop').classList.add('hidden');
   document.querySelectorAll('.modal').forEach(m => m.classList.remove('open'));
+  clearInterval(chatThreadPollInterval);
+  activeChatConversationId = null;
 }
 document.getElementById('modal-backdrop').addEventListener('click', e => {
   if (e.target.id === 'modal-backdrop') closeModals();
