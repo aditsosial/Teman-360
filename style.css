@@ -170,6 +170,7 @@ textarea{resize:vertical;font-family:var(--font-body);}
 .btn-primary{background:linear-gradient(135deg,var(--clr-primary) 0%, var(--clr-primary-dark) 100%);color:#fff;box-shadow:0 10px 22px rgba(78,156,124,0.35);}
 .btn-seru{background:linear-gradient(135deg,var(--clr-seru) 0%, #2E6E58 100%);color:#fff;box-shadow:0 10px 22px rgba(62,143,118,0.32);}
 .btn-peduli{background:linear-gradient(135deg,var(--clr-peduli) 0%, #1E4A3A 100%);color:#fff;box-shadow:0 10px 22px rgba(44,102,80,0.32);}
+.btn-danger{background:linear-gradient(135deg,#D9534F 0%, #A83832 100%);color:#fff;box-shadow:0 10px 22px rgba(168,56,50,0.28);}
 .btn-pill{padding:9px 16px;font-size:13px;border-radius:999px;}
 
 /* ===== App shell ===== */
