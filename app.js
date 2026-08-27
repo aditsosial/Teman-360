@@ -380,18 +380,27 @@ async function openDonationDetail(id) {
       <div class="detail-block">
         <h5>Sudah Membantu (${d.kontribusi.length})</h5>
         <div class="people-list">
-          ${d.kontribusi.length ? d.kontribusi.map(k => `<span>• ${k.nama}</span>`).join('') : '<span>Jadilah yang pertama membantu.</span>'}
+          ${d.kontribusi.length ? d.kontribusi.map(k => `<span>• ${k.nama} — ${formatRupiah(k.jumlah)}</span>`).join('') : '<span>Jadilah yang pertama membantu.</span>'}
         </div>
       </div>
+      <label style="margin-bottom:10px;">Nominal Transfer (Rp)
+        <input type="number" id="input-nominal" min="1000" step="1000" placeholder="mis. 500000">
+      </label>
       <button class="btn btn-peduli" id="btn-contribute" style="width:100%;">Saya Sudah Transfer</button>
       ${bolehHapus ? `<button class="btn btn-danger" id="btn-delete-donation" style="width:100%;margin-top:10px;">Hapus Donasi</button>` : ''}
     `;
     document.getElementById('btn-contribute').addEventListener('click', async () => {
+      const inputEl = document.getElementById('input-nominal');
+      const jumlah = Number(inputEl.value);
+      if (!jumlah || jumlah <= 0) {
+        showToast('Masukkan nominal transfer yang valid terlebih dahulu.');
+        return;
+      }
       try {
-        await apiPost('contribute', { donasiId: id, userId: currentUser.id, userNama: currentUser.nama, jumlah: 0 });
-        showToast('Terima kasih atas kepeduliannya! 🙏');
-        closeModals();
-        loadDonations();
+        await apiPost('contribute', { donasiId: id, userId: currentUser.id, userNama: currentUser.nama, jumlah });
+        showToast(`Terima kasih! Kontribusi ${formatRupiah(jumlah)} berhasil dicatat 🙏`);
+        loadDonations();       // refresh kartu di daftar Peduli
+        openDonationDetail(id); // refresh modal ini dengan progress & daftar terbaru
       } catch (err) {
         showToast(err.message);
       }
